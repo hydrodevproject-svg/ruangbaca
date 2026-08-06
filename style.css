@@ -161,7 +161,7 @@ html, body {
 }
 
 @media print {
-  #sidebar, header, nav, form, button, .no-print, #staffReaderContainer, #userReaderContainer, #verifyReaderContainer {
+  #sidebar, header, nav, form, button, .no-print {
     display: none !important;
   }
   body, html { background: #ffffff !important; color: #000000 !important; height: auto !important; overflow: visible !important; }

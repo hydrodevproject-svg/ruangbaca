@@ -8,9 +8,9 @@ let editPostImageBase64 = null;
 let selectedNotifDocId = null;
 let currentSelectedBookForBorrow = null;
 
-let html5QrCodeStaff = null;
-let html5QrCodeUser = null;
-let html5QrCodeVerify = null;
+let html5QrCodePopup = null;
+let activeScannerCallback = null;
+
 let cachedLogs = [];
 let booksCacheMap = {}; 
 let postsCacheMap = {};
@@ -40,6 +40,143 @@ const PRIMARY_ADMIN_EMAILS = [
   "fatinsafryansyah@pojokbaca.com"
 ];
 
+// --- FUNGSI POPUP SCANNER KAMERA (ALAH GAMBAR 1) ---
+function openPopupScanner(callback) {
+  activeScannerCallback = callback;
+  const modal = document.getElementById("popupScannerModal");
+  if (!modal) return;
+  modal.classList.remove("hidden");
+  updateIcons();
+
+  setTimeout(() => {
+    try {
+      html5QrCodePopup = new Html5Qrcode("popupReader");
+      html5QrCodePopup.start(
+        { facingMode: "environment" },
+        { fps: 10, qrbox: { width: 230, height: 230 } },
+        (decodedText) => {
+          closePopupScanner();
+          if (typeof activeScannerCallback === 'function') {
+            activeScannerCallback(decodedText);
+          }
+        },
+        () => {}
+      ).catch(err => {
+        showToastNotification("Gagal Kamera", "Tidak dapat mengakses kamera perangkat: " + err);
+        closePopupScanner();
+      });
+    } catch(e) {
+      console.error("Scanner init error:", e);
+    }
+  }, 200);
+}
+
+function closePopupScanner() {
+  if (html5QrCodePopup) {
+    html5QrCodePopup.stop().then(() => {
+      html5QrCodePopup.clear();
+      html5QrCodePopup = null;
+    }).catch(() => {
+      html5QrCodePopup = null;
+    });
+  }
+  const modal = document.getElementById("popupScannerModal");
+  if (modal) modal.classList.add("hidden");
+  activeScannerCallback = null;
+}
+
+// --- FUNGSI NADA NOTIFIKASI SINTETIS & TEST ---
+function playNotificationTone(toneStyle) {
+  try {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContext) return;
+    const ctx = new AudioContext();
+    const now = ctx.currentTime;
+
+    if (toneStyle === 'whatsapp') {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(1046.50, now);
+      osc.frequency.setValueAtTime(1318.51, now + 0.12);
+      gain.gain.setValueAtTime(0.3, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.35);
+    } else if (toneStyle === 'tiktok') {
+      [0, 0.08, 0.16].forEach((timeOffset, idx) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(idx === 2 ? 880 : 587.33, now + timeOffset);
+        gain.gain.setValueAtTime(0.25, now + timeOffset);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + timeOffset + 0.12);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now + timeOffset);
+        osc.stop(now + timeOffset + 0.12);
+      });
+    } else if (toneStyle === 'iphone') {
+      [ { f: 853.98, t: 0 }, { f: 1076.53, t: 0.12 }, { f: 1280.00, t: 0.24 }].forEach(note => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(note.f, now + note.t);
+        gain.gain.setValueAtTime(0.25, now + note.t);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + note.t + 0.18);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now + note.t);
+        osc.stop(now + note.t + 0.18);
+      });
+    } else if (toneStyle === 'marimba') {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(659.25, now);
+      gain.gain.setValueAtTime(0.2, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.25);
+    } else if (toneStyle === 'glass') {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(2093.00, now);
+      gain.gain.setValueAtTime(0.15, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.4);
+    } else {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(523.25, now);
+      osc.frequency.exponentialRampToValueAtTime(783.99, now + 0.2);
+      gain.gain.setValueAtTime(0.2, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.3);
+    }
+  } catch (e) {
+    console.error("Audio playback error:", e);
+  }
+}
+
+function testSelectedNotificationTone() {
+  const selectedTone = document.getElementById("settingNotificationTone").value || "whatsapp";
+  playNotificationTone(selectedTone);
+  showToastNotification("Tes Suara", `Memutar nada notifikasi gaya: ${selectedTone.toUpperCase()}`);
+}
+
 function showCustomConfirm(title, message) {
   return new Promise((resolve) => {
     const modal = document.getElementById("customConfirmModal");
@@ -55,21 +192,18 @@ function showCustomConfirm(title, message) {
 
     titleElem.innerText = title;
     msgElem.innerText = message;
-
     modal.classList.remove("hidden");
     updateIcons();
 
-    const handleOk = () => { cleanup(); resolve(true); };
-    const handleCancel = () => { cleanup(); resolve(false); };
-
-    function cleanup() {
+    btnOk.onclick = () => {
       modal.classList.add("hidden");
-      btnOk.removeEventListener("click", handleOk);
-      btnCancel.removeEventListener("click", handleCancel);
-    }
+      resolve(true);
+    };
 
-    btnOk.addEventListener("click", handleOk);
-    btnCancel.addEventListener("click", handleCancel);
+    btnCancel.onclick = () => {
+      modal.classList.add("hidden");
+      resolve(false);
+    };
   });
 }
 
@@ -212,6 +346,10 @@ function compressImage(file, maxWidth = 300, quality = 0.6) {
 function showToastNotification(title, message) {
   const container = document.getElementById("toastContainer");
   if (!container) return;
+
+  const savedTone = localStorage.getItem('pojokbaca_notif_tone') || 'whatsapp';
+  playNotificationTone(savedTone);
+
   const toast = document.createElement("div");
   toast.className = "w-full bg-card border border-[#5288c1]/40 text-app p-3.5 rounded-2xl shadow-2xl flex items-start gap-3 transform transition-all duration-300 translate-y-[-20px] opacity-0 pointer-events-auto backdrop-blur-md";
   toast.innerHTML = `<div class="p-2 bg-[#5288c1]/20 text-[#5288c1] rounded-xl shrink-0"><i data-feather="bell" class="w-4 h-4"></i></div><div class="flex-1"><h5 class="text-xs font-bold text-[#5288c1]">${title}</h5><p class="text-[11px] text-slate-300 mt-0.5">${message}</p></div>`;
@@ -380,6 +518,9 @@ auth.onAuthStateChanged(async (user) => {
       if (doc.exists) {
         currentUserData = doc.data();
         if (currentUserData.theme) applyTheme(currentUserData.theme);
+        if (currentUserData.notificationTone) {
+          localStorage.setItem('pojokbaca_notif_tone', currentUserData.notificationTone);
+        }
         if (!currentUserData.memberId) {
           const autoId = generateMemberId();
           await userRef.set({ memberId: autoId }, { merge: true });
@@ -392,6 +533,9 @@ auth.onAuthStateChanged(async (user) => {
         await userRef.set(currentUserData);
         setupUserUI(user, currentUserData);
       }
+
+      // Meminta izin dan mendaftarkan token FCM PWA otomatis
+      registerFCMToken(user);
     } catch (err) { console.error("Err Auth:", err); }
   } else {
     document.getElementById("loginSection").classList.remove("hidden");
@@ -399,6 +543,26 @@ auth.onAuthStateChanged(async (user) => {
   }
   updateIcons();
 });
+
+async function registerFCMToken(user) {
+  try {
+    if ('Notification' in window) {
+      const permission = await Notification.requestPermission();
+      if (permission === 'granted') {
+        const registration = await navigator.serviceWorker.ready;
+        const token = await messaging.getToken({
+          serviceWorkerRegistration: registration,
+          vapidKey: 'BFf-u2FWsg5JZRxzuETY-Mku5g-Wx1pK4ZsNQFC6I9vC_r350JnJFTwjJP39c3Itk5dRsZoW5jBLCSv8PsUnZEE'
+        });
+        if (token) {
+          await db.collection("users").doc(user.uid).set({ fcmToken: token }, { merge: true });
+        }
+      }
+    }
+  } catch (err) {
+    console.error("Gagal mendapatkan token FCM:", err);
+  }
+}
 
 function setupUserUI(user, userData) {
   const name = cleanText(userData.displayName || user.email.split('@')[0]);
@@ -481,6 +645,7 @@ async function acceptWebNotificationPermission() {
       const permission = await Notification.requestPermission();
       if (permission === 'granted') {
         showToastNotification("Notifikasi Aktif", "Notifikasi perangkat berhasil diaktifkan!");
+        if (auth.currentUser) registerFCMToken(auth.currentUser);
       }
     } catch (err) {
       console.error("Gagal meminta izin notifikasi:", err);
@@ -501,14 +666,14 @@ async function handleLogin(e) {
 }
 
 function logout() {
-  if (html5QrCodeStaff) { html5QrCodeStaff.stop().then(() => html5QrCodeStaff.clear()).catch(() => {}); html5QrCodeStaff = null; }
-  if (html5QrCodeUser) { html5QrCodeUser.stop().then(() => html5QrCodeUser.clear()).catch(() => {}); html5QrCodeUser = null; }
-  if (html5QrCodeVerify) { html5QrCodeVerify.stop().then(() => html5QrCodeVerify.clear()).catch(() => {}); html5QrCodeVerify = null; }
-
+  closePopupScanner();
   closeResetPasswordModal();
   clearAllListeners();
   if (auth.currentUser) createLog("LOGOUT", `User ${auth.currentUser.email} logout.`);
-  auth.signOut();
+  auth.signOut().then(() => {
+    document.getElementById("appContainer").classList.add("hidden");
+    document.getElementById("loginSection").classList.remove("hidden");
+  });
 }
 
 function loadUserProfileForm() {
@@ -523,6 +688,9 @@ function loadUserProfileForm() {
       document.getElementById("settingAddress").value = data.address || "";
       document.getElementById("settingMaxPinjam").value = MAX_PINJAM;
       document.getElementById("settingLamaPinjam").value = LAMA_PINJAM_HARI;
+      if (data.notificationTone) {
+        document.getElementById("settingNotificationTone").value = data.notificationTone;
+      }
 
       const previewContainer = document.getElementById("settingsAvatarPreview");
       if (data.avatarBase64) {
@@ -583,6 +751,7 @@ async function saveUserSettings() {
   const phoneNumber = document.getElementById("settingPhoneNumber").value.trim();
   const memberId = document.getElementById("settingMemberId").value.trim() || generateMemberId();
   const address = document.getElementById("settingAddress").value.trim();
+  const notificationTone = document.getElementById("settingNotificationTone").value;
 
   if (!displayName || !phoneNumber || !memberId || !address) {
     showToastNotification("Data Belum Lengkap", "Semua kolom kelengkapan profil wajib diisi!");
@@ -590,10 +759,11 @@ async function saveUserSettings() {
   }
 
   try {
-    const payload = { displayName, phoneNumber, memberId, address };
+    const payload = { displayName, phoneNumber, memberId, address, notificationTone };
     if (currentAvatarBase64) payload.avatarBase64 = currentAvatarBase64;
     if (currentCustomAudioBase64) payload.customAudioBase64 = currentCustomAudioBase64;
 
+    localStorage.setItem('pojokbaca_notif_tone', notificationTone);
     await db.collection("users").doc(user.uid).set(payload, { merge: true });
 
     if (currentUserData?.role === "staff" || currentUserData?.role === "admin_it") {
@@ -829,7 +999,6 @@ function renderFeedPostsList() {
     const staffName = cleanText(post.postedByStaff || 'Staff Perpustakaan');
     const displayAuthor = cleanText(post.author || staffName);
     const canEdit = currentUser && (post.authorEmail === currentUser.email || currentUserData?.role === 'admin_it');
-
     const postBadgeText = (post.type === "book") ? "BUKU" : "POST";
 
     let avatarHtml = `<div class="w-9 h-9 rounded-full bg-input text-[#5288c1] border border-[#5288c1]/30 flex items-center justify-center font-bold text-xs shrink-0 shadow">${staffName.substring(0, 2).toUpperCase()}</div>`;
@@ -994,13 +1163,18 @@ function closeReadPostModal() {
   }
 }
 
-// Logika Navigasi Tombol Back HP Terpadu
 window.addEventListener('popstate', async (event) => {
   const readPostModal = document.getElementById("readPostModal");
   const bookDetailModal = document.getElementById("bookDetailModal");
   const cropperModal = document.getElementById("cropperModal");
   const qrModal = document.getElementById("qrApprovalModal");
+  const popupScannerModal = document.getElementById("popupScannerModal");
 
+  if (popupScannerModal && !popupScannerModal.classList.contains("hidden")) {
+    closePopupScanner();
+    history.pushState(null, "", window.location.href);
+    return;
+  }
   if (readPostModal && !readPostModal.classList.contains("hidden")) {
     readPostModal.classList.add("hidden");
     history.pushState(null, "", window.location.href);
@@ -1341,71 +1515,12 @@ async function deleteAllPostsByAdmin() {
   try {
     const snap = await db.collection("libraryPosts").get();
     const batch = db.batch();
-
-    snap.forEach(doc => {
-      batch.delete(doc.ref);
-    });
-
+    snap.forEach(doc => { batch.delete(doc.ref); });
     await batch.commit();
     createLog("DELETE_ALL_POSTS", `Admin IT menghapus seluruh postingan (${snap.size} post).`);
     showToastNotification("Berhasil", "Semua postingan berhasil dibersihkan!");
   } catch (err) {
     showToastNotification("Gagal", "Gagal menghapus postingan: " + err.message);
-  }
-}
-
-function toggleStaffScanner() {
-  const container = document.getElementById("staffReaderContainer"), btn = document.getElementById("btnStaffScanner"), icon = document.getElementById("iconStaffScanner"), label = document.getElementById("labelStaffScanner");
-  if (container.classList.contains("hidden")) {
-    container.classList.remove("hidden");
-    btn.className = "px-3.5 py-1.5 bg-rose-600 hover:bg-rose-500 text-white font-semibold rounded-xl text-xs transition shadow-md active:scale-95 flex items-center gap-1.5 shrink-0";
-    icon.setAttribute("data-feather", "x"); label.innerText = "Tutup"; updateIcons();
-    html5QrCodeStaff = new Html5Qrcode("staffReader");
-    html5QrCodeStaff.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 220, height: 160 } }, (decodedText) => {
-      document.getElementById("bookKode").value = decodedText; toggleStaffScanner(); showToastNotification("Scan Berhasil", `Kode: ${decodedText}`);
-    }, () => {}).catch(err => { showToastNotification("Gagal Kamera", err); toggleStaffScanner(); });
-  } else {
-    if (html5QrCodeStaff) html5QrCodeStaff.stop().then(() => html5QrCodeStaff.clear()).catch(() => {});
-    container.classList.add("hidden");
-    btn.className = "px-3.5 py-1.5 bg-gradient-to-r from-[#5288c1] to-[#3a6fa0] text-white font-semibold rounded-xl text-xs transition shadow-md active:scale-95 flex items-center gap-1.5 shrink-0";
-    icon.setAttribute("data-feather", "camera"); label.innerText = "Scan Kode"; updateIcons();
-  }
-}
-
-function toggleUserScanner() {
-  const container = document.getElementById("userReaderContainer"), btn = document.getElementById("btnUserScanner"), icon = document.getElementById("iconUserScanner"), label = document.getElementById("labelUserScanner");
-  if (container.classList.contains("hidden")) {
-    container.classList.remove("hidden");
-    btn.className = "w-full py-2 bg-rose-600 hover:bg-rose-500 text-white font-medium rounded-xl text-[10px] transition shadow flex items-center justify-center gap-1.5 shrink-0";
-    icon.setAttribute("data-feather", "x"); label.innerText = "Tutup Scanner"; updateIcons();
-    html5QrCodeUser = new Html5Qrcode("userReader");
-    html5QrCodeUser.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 220, height: 160 } }, (decodedText) => {
-      document.getElementById("searchFeedPostsInput").value = decodedText; handleUniversalSearch(); toggleUserScanner();
-    }, () => {}).catch(err => { showToastNotification("Gagal Kamera", err); toggleUserScanner(); });
-  } else {
-    if (html5QrCodeUser) html5QrCodeUser.stop().then(() => html5QrCodeUser.clear()).catch(() => {});
-    container.classList.add("hidden");
-    btn.className = "w-full py-2 bg-gradient-to-r from-[#5288c1] to-[#3a6fa0] text-white font-medium rounded-xl text-[10px] transition shadow flex items-center justify-center gap-1.5 shrink-0";
-    icon.setAttribute("data-feather", "camera"); label.innerText = "Scan Kode"; updateIcons();
-  }
-}
-
-function toggleVerifyScanner() {
-  const container = document.getElementById("verifyReaderContainer"), btn = document.getElementById("btnVerifyScanner");
-  if (container.classList.contains("hidden")) {
-    container.classList.remove("hidden");
-    btn.className = "py-2.5 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-xl text-xs transition active:scale-95 flex items-center justify-center gap-1.5 border border-rose-500/40 shadow-md";
-    btn.innerHTML = `<i data-feather="x" class="w-4 h-4 text-white"></i> <span>Tutup</span>`;
-    html5QrCodeVerify = new Html5Qrcode("verifyReader");
-    html5QrCodeVerify.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 220, height: 160 } }, (decodedText) => {
-      document.getElementById("staffVerifyCodeInput").value = decodedText; verifyBorrowCode(decodedText); toggleVerifyScanner();
-    }, () => {}).catch(err => { showToastNotification("Gagal Kamera", err); toggleVerifyScanner(); });
-  } else {
-    if (html5QrCodeVerify) html5QrCodeVerify.stop().then(() => html5QrCodeVerify.clear()).catch(() => {});
-    container.classList.add("hidden");
-    btn.className = "py-2.5 bg-[#5288c1] hover:bg-[#4676a9] text-white font-bold rounded-xl text-xs transition active:scale-95 shadow-md flex items-center justify-center gap-1.5 border border-[#5288c1]/40";
-    btn.innerHTML = `<i data-feather="camera" class="w-4 h-4 text-white"></i> <span>Scan QR</span>`;
-    updateIcons();
   }
 }
 
@@ -1668,7 +1783,6 @@ function loadPeminjamView() {
         const isWaitingReturn = data.status === 'Menunggu Pengembalian';
         const isReturned = data.status === 'Dikembalikan';
 
-        // Visibilitas teks status kontras di tema terang/gelap
         let statusBadgeClass = 'bg-input text-app border border-card-border font-bold';
         if (isWaitingBorrow) statusBadgeClass = 'bg-amber-500/20 text-amber-500 dark:text-amber-300 border border-amber-500/30 font-bold';
         if (isBorrowing) statusBadgeClass = 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 border border-emerald-500/30 font-bold';

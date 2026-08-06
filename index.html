@@ -247,14 +247,10 @@
             </div>
 
             <div class="flex items-center gap-2">
-              <button id="btnUserScanner" type="button" onclick="toggleUserScanner()" class="w-full py-2 bg-gradient-to-r from-[#5288c1] to-[#3a6fa0] text-white font-medium rounded-xl text-[10px] transition shadow flex items-center justify-center gap-1.5 shrink-0">
+              <button id="btnUserScanner" type="button" onclick="openPopupScanner((code) => { document.getElementById('searchFeedPostsInput').value = code; handleUniversalSearch(); })" class="w-full py-2 bg-gradient-to-r from-[#5288c1] to-[#3a6fa0] text-white font-medium rounded-xl text-[10px] transition shadow flex items-center justify-center gap-1.5 shrink-0">
                 <i id="iconUserScanner" data-feather="camera" class="w-3.5 h-3.5"></i>
                 <span id="labelUserScanner">Scan Kode</span>
               </button>
-            </div>
-
-            <div id="userReaderContainer" class="hidden bg-input rounded-2xl overflow-hidden p-2">
-              <div id="userReader" class="w-full rounded-xl overflow-hidden"></div>
             </div>
 
             <div class="space-y-2 pt-0.5" id="userBorrowCardList"></div>
@@ -353,14 +349,10 @@
                   <h4 class="font-semibold text-app text-[10px] uppercase tracking-wider flex items-center gap-1.5">
                     <i data-feather="plus" class="w-3.5 h-3.5 text-[#5288c1]"></i> Input Data Buku Baru
                   </h4>
-                  <button id="btnStaffScanner" type="button" onclick="toggleStaffScanner()" class="px-3 py-1 bg-gradient-to-r from-[#5288c1] to-[#3a6fa0] text-white font-medium rounded-xl text-[10px] transition shadow active:scale-95 flex items-center gap-1 shrink-0">
-                    <i id="iconStaffScanner" data-feather="camera" class="w-3 h-3"></i>
-                    <span id="labelStaffScanner">Scan Kode</span>
+                  <button id="btnStaffScanner" type="button" onclick="openPopupScanner((code) => { document.getElementById('bookKode').value = code; showToastNotification('Scan Berhasil', `Kode: ${code}`); })" class="px-3 py-1 bg-gradient-to-r from-[#5288c1] to-[#3a6fa0] text-white font-medium rounded-xl text-[10px] transition shadow active:scale-95 flex items-center gap-1 shrink-0">
+                    <i data-feather="camera" class="w-3 h-3"></i>
+                    <span>Scan Kode</span>
                   </button>
-                </div>
-
-                <div id="staffReaderContainer" class="hidden bg-input border border-card-border rounded-xl overflow-hidden p-2">
-                  <div id="staffReader" class="w-full rounded-lg overflow-hidden"></div>
                 </div>
 
                 <form onsubmit="addBook(event)" class="space-y-2">
@@ -435,15 +427,11 @@
                     <button onclick="verifyBorrowCodeFromInput()" class="py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-medium rounded-xl text-[11px] transition active:scale-95 shadow flex items-center justify-center gap-1">
                       <i data-feather="check-circle" class="w-3.5 h-3.5"></i> Verifikasi
                     </button>
-                    <button id="btnVerifyScanner" onclick="toggleVerifyScanner()" title="Scan QR Code" class="py-2 bg-[#5288c1] hover:bg-[#4676a9] text-white font-medium rounded-xl text-[11px] transition active:scale-95 shadow flex items-center justify-center gap-1">
+                    <button id="btnVerifyScanner" onclick="openPopupScanner((code) => { document.getElementById('staffVerifyCodeInput').value = code; verifyBorrowCode(code); })" title="Scan QR Code" class="py-2 bg-[#5288c1] hover:bg-[#4676a9] text-white font-medium rounded-xl text-[11px] transition active:scale-95 shadow flex items-center justify-center gap-1">
                       <i data-feather="camera" class="w-3.5 h-3.5 text-white"></i>
                       <span>Scan QR</span>
                     </button>
                   </div>
-                </div>
-
-                <div id="verifyReaderContainer" class="hidden bg-card border border-card-border rounded-xl overflow-hidden p-2">
-                  <div id="verifyReader" class="w-full rounded-lg overflow-hidden"></div>
                 </div>
               </div>
 
@@ -492,6 +480,31 @@
                 <button type="button" onclick="setThemeMode('light')" id="btnThemeLight" class="p-2.5 rounded-xl border flex items-center justify-center gap-2 text-xs font-medium transition">
                   <i data-feather="sun" class="w-4 h-4"></i> Mode Terang
                 </button>
+              </div>
+            </div>
+
+            <!-- PENGATURAN NADA NOTIFIKASI -->
+            <div class="space-y-2.5 border-b border-card-border pb-3">
+              <h4 class="text-[10px] font-semibold text-[#5288c1] uppercase tracking-wider flex items-center gap-1.5">
+                <i data-feather="volume-2" class="w-3.5 h-3.5"></i> Nada Notifikasi Suara
+              </h4>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div>
+                  <label class="block text-[9px] text-slate-400 uppercase mb-0.5">Pilih Nada Notifikasi</label>
+                  <select id="settingNotificationTone" class="w-full bg-input border border-input-border focus:border-[#5288c1] rounded-xl px-2.5 py-2 text-xs font-normal text-app outline-none">
+                    <option value="whatsapp">WhatsApp (Default)</option>
+                    <option value="tiktok">TikTok Sound</option>
+                    <option value="iphone">iPhone Tri-tone</option>
+                    <option value="marimba">Marimba Klasik</option>
+                    <option value="glass">Glass Ping</option>
+                    <option value="chime">Chime Lembut</option>
+                  </select>
+                </div>
+                <div class="flex items-end">
+                  <button type="button" onclick="testSelectedNotificationTone()" class="w-full py-2 bg-input hover:bg-white/5 text-app border border-card-border rounded-xl text-xs font-medium transition flex items-center justify-center gap-1.5 active:scale-95 shadow-sm">
+                    <i data-feather="play-circle" class="w-3.5 h-3.5 text-[#5288c1]"></i> Test Suara Nada
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -777,6 +790,30 @@
   </div>
 
   <!-- MODALS SECTION -->
+
+  <!-- MODAL POPUP SCANNER KAMERA (ALAH GAMBAR 1) -->
+  <div id="popupScannerModal" class="fixed inset-0 bg-black/85 backdrop-blur-md z-[250] flex items-center justify-center p-4 hidden">
+    <div class="bg-card border border-card-border w-full max-w-sm rounded-3xl p-5 shadow-2xl relative space-y-4 my-auto text-center">
+      <div class="flex items-center justify-between border-b border-card-border pb-2.5">
+        <h3 class="font-semibold text-app text-xs flex items-center gap-1.5">
+          <i data-feather="camera" class="w-4 h-4 text-[#5288c1]"></i> Scan QR Code / Barcode
+        </h3>
+        <button onclick="closePopupScanner()" class="text-slate-400 hover:text-app p-1 rounded-lg transition">
+          <i data-feather="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <div class="w-full bg-input rounded-2xl overflow-hidden p-2 border border-card-border shadow-inner">
+        <div id="popupReader" class="w-full rounded-xl overflow-hidden"></div>
+      </div>
+
+      <p class="text-[11px] text-slate-400 font-light">Arahkan kamera ke QR Code buku atau tiket peminjaman Anda.</p>
+
+      <button type="button" onclick="closePopupScanner()" class="w-full py-2.5 bg-rose-600 hover:bg-rose-500 text-white font-medium rounded-xl text-xs transition shadow active:scale-95">
+        Tutup Kamera
+      </button>
+    </div>
+  </div>
 
   <!-- MODAL CUSTOM CONFIRM DIALOG SINKRON TEMA -->
   <div id="customConfirmModal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-[200] flex items-center justify-center p-4 hidden">

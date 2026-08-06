@@ -13,3 +13,6 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
+
+// Inisialisasi Messaging untuk Push Notification PWA
+const messaging = firebase.messaging();
