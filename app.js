@@ -35,12 +35,12 @@ let unsubscribePosts = null;
 let unsubscribeNotifs = null;
 
 const PRIMARY_ADMIN_EMAILS = [
-  "admin@pojokbaca.com", 
-  "admin_it@pojokbaca.com", 
-  "fatinsafryansyah@pojokbaca.com"
+  "admin@ruangbaca.com", 
+  "admin_it@ruangbaca.com", 
+  "fatinsafryansyah@ruangbaca.com"
 ];
 
-// --- FUNGSI POPUP SCANNER KAMERA (ALAH GAMBAR 1) ---
+// --- FUNGSI POPUP SCANNER KAMERA ---
 function openPopupScanner(callback) {
   activeScannerCallback = callback;
   const modal = document.getElementById("popupScannerModal");
@@ -223,12 +223,12 @@ function applyTheme(theme) {
   }
 }
 
-const initialSavedTheme = localStorage.getItem('pojokbaca_theme') || 'dark';
+const initialSavedTheme = localStorage.getItem('ruangbaca_theme') || 'dark';
 applyTheme(initialSavedTheme);
 
 async function setThemeMode(mode) {
   applyTheme(mode);
-  localStorage.setItem('pojokbaca_theme', mode);
+  localStorage.setItem('ruangbaca_theme', mode);
   const user = auth.currentUser;
   if (user) {
     try {
@@ -347,7 +347,7 @@ function showToastNotification(title, message) {
   const container = document.getElementById("toastContainer");
   if (!container) return;
 
-  const savedTone = localStorage.getItem('pojokbaca_notif_tone') || 'whatsapp';
+  const savedTone = localStorage.getItem('ruangbaca_notif_tone') || 'whatsapp';
   playNotificationTone(savedTone);
 
   const toast = document.createElement("div");
@@ -372,7 +372,7 @@ function createLog(action, detail) {
 }
 
 function generateMemberId() {
-  return `PB-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+  return `RB-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
 }
 
 function checkUserProfileComplete(userData) {
@@ -406,7 +406,7 @@ function switchTab(tabId) {
     'dashboardStaff': ['Sirkulasi Perpustakaan', 'Kelola postingan, stok buku & status'],
     'dashboardNotifikasi': ['Notifikasi & Siaran', 'Pesan masuk dan informasi penting'],
     'dashboardProfil': ['Profil Pengguna', 'Kelola kelengkapan data diri & tema'],
-    'dashboardPeminjam': ['pojokbaca', 'by Leni Suspidayanti']
+    'dashboardPeminjam': ['ruangbaca', 'by Leni Suspidayanti']
   };
 
   if (titleMap[tabId]) {
@@ -519,7 +519,7 @@ auth.onAuthStateChanged(async (user) => {
         currentUserData = doc.data();
         if (currentUserData.theme) applyTheme(currentUserData.theme);
         if (currentUserData.notificationTone) {
-          localStorage.setItem('pojokbaca_notif_tone', currentUserData.notificationTone);
+          localStorage.setItem('ruangbaca_notif_tone', currentUserData.notificationTone);
         }
         if (!currentUserData.memberId) {
           const autoId = generateMemberId();
@@ -763,7 +763,7 @@ async function saveUserSettings() {
     if (currentAvatarBase64) payload.avatarBase64 = currentAvatarBase64;
     if (currentCustomAudioBase64) payload.customAudioBase64 = currentCustomAudioBase64;
 
-    localStorage.setItem('pojokbaca_notif_tone', notificationTone);
+    localStorage.setItem('ruangbaca_notif_tone', notificationTone);
     await db.collection("users").doc(user.uid).set(payload, { merge: true });
 
     if (currentUserData?.role === "staff" || currentUserData?.role === "admin_it") {
@@ -1205,7 +1205,7 @@ window.addEventListener('popstate', async (event) => {
   }
 
   history.pushState(null, "", window.location.href);
-  const exitConfirmed = await showCustomConfirm("Keluar Aplikasi", "Apakah anda ingin keluar dari pojokbaca?");
+  const exitConfirmed = await showCustomConfirm("Keluar Aplikasi", "Apakah anda ingin keluar dari ruangbaca?");
   if (exitConfirmed) {
     window.close();
   }
@@ -2114,7 +2114,7 @@ function showApprovalTicket(codeStr, type = 'pinjam') {
 function closeQrApprovalModal() { document.getElementById("qrApprovalModal").classList.add("hidden"); }
 
 function sendSystemNotification(title, content, type = 'sistem', targetUserId = null) {
-  const notifData = { title, content, type, readBy: [], sender: type === 'siaran' ? "Staff Perpustakaan" : "Sistem pojokbaca", timestamp: firebase.firestore.FieldValue.serverTimestamp() };
+  const notifData = { title, content, type, readBy: [], sender: type === 'siaran' ? "Staff Perpustakaan" : "Sistem ruangbaca", timestamp: firebase.firestore.FieldValue.serverTimestamp() };
   if (targetUserId) notifData.targetUser = targetUserId;
   db.collection("notifications").add(notifData);
 }
@@ -2383,9 +2383,9 @@ async function clearAppCacheAndReload() {
       await Promise.all(cacheNames.map(name => caches.delete(name)));
     }
 
-    const savedTheme = localStorage.getItem('pojokbaca_theme');
+    const savedTheme = localStorage.getItem('ruangbaca_theme');
     localStorage.clear();
-    if (savedTheme) localStorage.setItem('pojokbaca_theme', savedTheme);
+    if (savedTheme) localStorage.setItem('ruangbaca_theme', savedTheme);
 
     sessionStorage.clear();
     showToastNotification("Cache Dibersihkan", "Memuat ulang aplikasi...");
