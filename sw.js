@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pojokbaca-v1';
+const CACHE_NAME = 'ruangbaca-v1';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -49,7 +49,7 @@ self.addEventListener('fetch', (event) => {
 
 self.addEventListener('push', (event) => {
   let payload = {
-    title: 'pojokbaca Perpustakaan',
+    title: 'ruangbaca Perpustakaan',
     body: 'Ada pembaruan transaksi di akun Anda.',
     icon: '/icon-192.png'
   };
